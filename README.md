@@ -1,52 +1,71 @@
 # release-tool
 
-This tool is useful if you have a several organizations that contain repositories which constantly required to be released from time to time.
+This tool provides an easy way to batch releases on multiple Github repositories across organizations.
+
+It works in three stages:
+- Collect commit logs and latest release tags (automated)
+- Edit the release file to set description and the new version tag (manual)
+- Apply (push) the releases (automated)
 
 ## Collect
-This command receives `yml` config file with map where key - owner name, value - array of repositories to discover
-```yml
-lwsanty:
-  - repo0
-  - repo1
-johnny:
-  - repo0
-  - repo1
-```
-Gets releases, post-release commits information and emits it to a file that looks like
-```yml
-lwsanty:
-  repo0:
-    tag: 'v0.0.1'
-    description: |-
-      * post-release comment 0
-      * post-release comment 1
-  repo1:
-    tag: '[no tags]'
-    description: |-
-      * post-release comment 0
-      * post-release comment 1
-johnny:
-  repo0:
-    tag: 'v0.0.1'
-    description: |-
-      * post-release comment 0
-      * post-release comment 1
-  repo1:
-    tag: '[no tags]'
-    description: |-
-      * post-release comment 0
-      * post-release comment 1
-```
-Where:
-- `tag` is the latest release tag name
-- `description` is a bullet-list of commits' descriptions that were done after the latest release, if `[no tags]` then all commits' descriptions will be included
 
-Example:
+First, create a file with a list of repositories:
+
+```yml
+lwsanty:
+  - repo0
+  - repo1
+johnny:
+  - repo0
+  - repo1
+```
+
+To collect an information for upcoming releases, run the following command: 
+
+```bash
+export GITHUB_TOKEN=XXX
+relese-tool collect -c config.yml
+```
+
+It will generate a `releases.yml` file that contains commit logs for all repositories, as well as latest release tags (if any):
+
+```yml
+lwsanty:
+  repo0:
+    tag: 'v0.0.1'
+    description: |-
+      * post-release comment 0
+      * post-release comment 1
+  repo1:
+    tag: '[no tags]'
+    description: |-
+      * post-release comment 0
+      * post-release comment 1
+johnny:
+  repo0:
+    tag: 'v0.0.1'
+    description: |-
+      * post-release comment 0
+      * post-release comment 1
+  repo1:
+    tag: '[no tags]'
+    description: |-
+      * post-release comment 0
+      * post-release comment 1
+```
+
+The `tag` is the latest existing release tag. You must increment a specific version number there, since the tool cannot be sure if the change minor or not (e.g. minor).
+
+The `description` is a release description. It is generated as a bullet list of commit messages that were done after the latest release.
+If there was no tags (as indicated by `tag: '[no tags]'`), then all commits will be included.
+This serves as a baseline, you are free to rewrite the description according to a preferred style.
+
+A full example:
 ```bash
 export GITHUB_TOKEN=XXX
 export LOG_LEVEL=debug
 
-go run main.go collect
+release-tool collect
 ```
 Usage:
 ```
@@ -63,15 +82,15 @@ Help Options:
 ```
 
 ## Apply
-After `collect` is performed you can manually tweak `releases.yml` file to set new iteration of repos versions and correct the descriptions of upcoming releases
-When corrections are done you have a new config for a multiple repositories release. Just execute the apply command
+
+After editing the `releses.yml` you can send (apply) those releases to Github. Just execute the `apply` command:
 
 Example:
 ```bash
 export GITHUB_TOKEN=XXX
 export LOG_LEVEL=debug
 
-go run main.go apply
+relese-tool apply
 ```
 
 Usage:
